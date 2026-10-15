@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProdVerify — Product Authenticity Verification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --surface-color: #111827;
+            --surface-card: rgba(17, 24, 39, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(99, 102, 241, 0.5);
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+
+            --verified-color: #10b981;
+            --verified-bg: rgba(16, 185, 129, 0.12);
+            --verified-border: rgba(16, 185, 129, 0.35);
+
+            --suspicious-color: #f59e0b;
+            --suspicious-bg: rgba(245, 158, 11, 0.12);
+            --suspicious-border: rgba(245, 158, 11, 0.35);
+
+            --invalid-color: #ef4444;
+            --invalid-bg: rgba(239, 68, 68, 0.12);
+            --invalid-border: rgba(239, 68, 68, 0.35);
+
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15), transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.05), transparent 40%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 1rem 3rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.25rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #6366f1, #3b82f6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+        }
+
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-title span {
+            color: #818cf8;
+        }
+
+        .badge-live {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #818cf8;
+            box-shadow: 0 0 8px #818cf8;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        /* Verification Hero Card */
+        .status-hero {
+            border-radius: 18px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+        }
+
+        .status-hero.VERIFIED {
+            background: var(--verified-bg);
+            border-color: var(--verified-border);
+            box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.25);
+        }
+        .status-hero.VERIFIED::before {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .status-hero.SUSPICIOUS {
+            background: var(--suspicious-bg);
+            border-color: var(--suspicious-border);
+            box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.25);
+        }
+        .status-hero.SUSPICIOUS::before {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .status-hero.INVALID {
+            background: var(--invalid-bg);
+            border-color: var(--invalid-border);
+            box-shadow: 0 10px 30px -10px rgba(239, 68, 68, 0.25);
+        }
+        .status-hero.INVALID::before {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        .status-icon-wrapper {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .VERIFIED .status-icon-wrapper {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .SUSPICIOUS .status-icon-wrapper {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .INVALID .status-icon-wrapper {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .status-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-explanation {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Warnings Box */
+        .warnings-box {
+            margin-top: 1.25rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .warnings-box-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .SUSPICIOUS .warnings-box-title { color: #f59e0b; }
+        .INVALID .warnings-box-title { color: #ef4444; }
+
+        .warning-item {
+            font-size: 0.85rem;
+            color: #e5e7eb;
+            line-height: 1.45;
+            margin-bottom: 0.4rem;
+            padding-left: 1rem;
+            position: relative;
+        }
+        .warning-item:last-child { margin-bottom: 0; }
+        .warning-item::before {
+            content: "•";
+            position: absolute;
+            left: 0.2rem;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        /* Scan Counter Banner */
+        .scan-stats-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1.25rem;
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+        }
+
+        .scan-stats-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .scan-count-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #818cf8;
+            background: rgba(99, 102, 241, 0.15);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        /* Card Section */
+        .card {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .detail-value {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            width: fit-content;
+        }
+
+        .status-pill.IN_STOCK { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .status-pill.SOLD { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .status-pill.BLOCKED { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+        /* Retailer Verification Tool */
+        .retailer-verifier {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .retailer-verifier-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #1f2937;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        select:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Disclaimer */
+        .disclaimer-card {
+            background: rgba(17, 24, 39, 0.5);
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .disclaimer-title {
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            padding: 1rem;
+        }
+
+        /* Loading Skeleton */
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        @media (max-width: 480px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <a href="/" class="brand">
+                <div class="brand-logo">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                </div>
+                <div class="brand-title">Prod<span>Verify</span></div>
+            </a>
+            <div class="badge-live">
+                <div class="pulse-dot"></div>
+                LIVE SYSTEM
+            </div>
+        </header>
+
+        <!-- Main Verification Result Hero -->
+        <div id="status-hero" class="status-hero VERIFIED">
+            <div class="status-icon-wrapper" id="status-icon">
+                <!-- SVG Icon populated via JS -->
+            </div>
+            <h1 class="status-title" id="status-title">Verifying Code...</h1>
+            <p class="status-explanation" id="status-explanation">Connecting to the central manufacturer registry to query recorded product identity.</p>
+
+            <div id="warnings-box" class="warnings-box" style="display: none;">
+                <div class="warnings-box-title" id="warnings-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Security Indicators Requiring Attention
+                </div>
+                <div id="warnings-list"></div>
+            </div>
+        </div>
+
+        <!-- Scan Counter Bar -->
+        <div class="scan-stats-bar">
+            <div class="scan-stats-label">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M7 7h.01M17 7h.01M7 17h.01M17 17h.01M12 12h.01"/>
+                </svg>
+                External QR Verification Count
+            </div>
+            <div class="scan-count-badge" id="scan-count">1 scan</div>
+        </div>
+
+        <!-- Product Identity Details Card -->
+        <div class="card" id="product-card" style="display: none;">
+            <div class="card-header">
+                <div class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                    </svg>
+                    Registered Product Identity
+                </div>
+                <div id="product-status-pill" class="status-pill IN_STOCK">IN_STOCK</div>
+            </div>
+
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Product Name</span>
+                    <span class="detail-value" id="product-name">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Product ID</span>
+                    <span class="detail-value mono" id="product-id">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Serial Number</span>
+                    <span class="detail-value mono" id="serial-number">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Manufacturing Origin</span>
+                    <span class="detail-value" id="mfg-location">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Warranty Status</span>
+                    <span class="detail-value" id="reg-status">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Security Protocol</span>
+                    <span class="detail-value">Dual-Token CSPRNG</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Retailer Location & Verification Card -->
+        <div class="card" id="retailer-card" style="display: none;">
+            <div class="card-header">
+                <div class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                    Intended Authorized Retailer
+                </div>
+            </div>
+
+            <div class="detail-grid" style="margin-bottom: 1.25rem;">
+                <div class="detail-item">
+                    <span class="detail-label">Store Name</span>
+                    <span class="detail-value" id="retailer-name">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Authorized Location</span>
+                    <span class="detail-value" id="retailer-location">-</span>
+                </div>
+            </div>
+
+            <!-- Interactive Store Location Evidence Check -->
+            <div class="retailer-verifier">
+                <div class="detail-label">Check Current Store Location (Self-Reported Evidence)</div>
+                <p class="retailer-verifier-desc">
+                    Confirm where you are purchasing this item. ProdVerify will compare your selected store with the manufacturer's authorized delivery route.
+                </p>
+                <div class="select-wrapper">
+                    <select id="retailer-selector" onchange="onRetailerChange()">
+                        <option value="">-- Select Store Where You Are Purchasing --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Disclaimer -->
+        <div class="disclaimer-card">
+            <div class="disclaimer-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                Authenticity Assurance Disclaimer
+            </div>
+            <p id="disclaimer-text">
+                Verification is based on recorded manufacturer data and current risk indicators. A valid match confirms the code exists in the registry, but physical inspection of tamper-evident security packaging and purchasing from an authorized retailer remain essential.
+            </p>
+        </div>
+
+        <footer>
+            ProdVerify MVP &bull; Secure Anti-Counterfeit Verification Engine &bull; Windows Local SQLite
+        </footer>
+    </div>
+
+    <script>
+        const token = "{{ token }}";
+        let availableRetailers = [];
+
+        const ICONS = {
+            VERIFIED: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>`,
+            SUSPICIOUS: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>`,
+            INVALID: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>`
+        };
+
+        async function loadRetailers() {
+            try {
+                const res = await fetch('/api/retailers');
+                if (res.ok) {
+                    availableRetailers = await res.json();
+                    const selector = document.getElementById('retailer-selector');
+                    availableRetailers.forEach(r => {
+                        const opt = document.createElement('option');
+                        opt.value = r.retailer_id;
+                        opt.textContent = `${r.retailer_name} — ${r.city}, ${r.state}`;
+                        selector.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load retailers:", err);
+            }
+        }
+
+        async function verifyToken(reportedRetailerId = null) {
+            const hero = document.getElementById('status-hero');
+            const icon = document.getElementById('status-icon');
+            const title = document.getElementById('status-title');
+            const explanation = document.getElementById('status-explanation');
+            const warningsBox = document.getElementById('warnings-box');
+            const warningsList = document.getElementById('warnings-list');
+            const scanCountBadge = document.getElementById('scan-count');
+            const productCard = document.getElementById('product-card');
+            const retailerCard = document.getElementById('retailer-card');
+
+            hero.classList.add('loading');
+
+            let url = `/api/verify/${encodeURIComponent(token)}`;
+            if (reportedRetailerId) {
+                url += `?reported_retailer_id=${encodeURIComponent(reportedRetailerId)}`;
+            }
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+
+                hero.className = `status-hero ${data.result}`;
+                icon.innerHTML = ICONS[data.result] || ICONS.INVALID;
+
+                if (data.result === 'VERIFIED') {
+                    title.textContent = "Authentic Product Confirmed";
+                } else if (data.result === 'SUSPICIOUS') {
+                    title.textContent = "Caution: Security Warning";
+                } else {
+                    title.textContent = "Invalid / Unrecognized Product";
+                }
+
+                explanation.textContent = data.explanation;
+
+                // Warnings
+                if (data.risk_warnings && data.risk_warnings.length > 0) {
+                    warningsList.innerHTML = data.risk_warnings.map(w => `<div class="warning-item">${w}</div>`).join('');
+                    warningsBox.style.display = 'block';
+                } else {
+                    warningsBox.style.display = 'none';
+                }
+
+                // Scan count
+                scanCountBadge.textContent = `${data.scan_count} ${data.scan_count === 1 ? 'scan' : 'scans'}`;
+
+                // Disclaimer
+                if (data.disclaimer) {
+                    document.getElementById('disclaimer-text').textContent = data.disclaimer;
+                }
+
+                // Product details
+                if (data.product) {
+                    productCard.style.display = 'block';
+                    document.getElementById('product-name').textContent = data.product.product_name;
+                    document.getElementById('product-id').textContent = data.product.product_id;
+                    document.getElementById('serial-number').textContent = data.product.serial_number;
+                    document.getElementById('mfg-location').textContent = data.product.manufacturing_location || 'Not specified';
+                    document.getElementById('reg-status').textContent = data.product.registration_status;
+
+                    const pill = document.getElementById('product-status-pill');
+                    pill.textContent = data.product.product_status;
+                    pill.className = `status-pill ${data.product.product_status}`;
+                } else {
+                    productCard.style.display = 'none';
+                }
+
+                // Retailer details
+                if (data.intended_retailer) {
+                    retailerCard.style.display = 'block';
+                    document.getElementById('retailer-name').textContent = data.intended_retailer.retailer_name;
+                    document.getElementById('retailer-location').textContent = `${data.intended_retailer.city}, ${data.intended_retailer.state} (${data.intended_retailer.address || 'Address on file'})`;
+                } else {
+                    retailerCard.style.display = 'none';
+                }
+
+            } catch (err) {
+                console.error("Verification failed:", err);
+                hero.className = 'status-hero INVALID';
+                icon.innerHTML = ICONS.INVALID;
+                title.textContent = "Verification Service Error";
+                explanation.textContent = "Could not reach the ProdVerify verification service. Please try again.";
+            } finally {
+                hero.classList.remove('loading');
+            }
+        }
+
+        function onRetailerChange() {
+            const selector = document.getElementById('retailer-selector');
+            const val = selector.value ? parseInt(selector.value, 10) : null;
+            verifyToken(val);
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadRetailers();
+            await verifyToken();
+        });
+    </script>
+</body>
+</html>

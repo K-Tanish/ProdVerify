@@ -11,3 +11,5 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH.as_posix()
 # QR and Application settings
 BASE_VERIFY_URL = os.getenv("BASE_VERIFY_URL", "http://localhost:8000")
 QR_STORAGE_DIR = BASE_DIR / "qr_codes"
+SCAN_ALERT_THRESHOLD = int(os.getenv("SCAN_ALERT_THRESHOLD", "5"))
+

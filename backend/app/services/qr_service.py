@@ -61,3 +61,26 @@ def generate_product_qr_files(
     save_qr_code(int_url, int_path)
 
     return ext_path, int_path
+
+
+def generate_all_stored_qr_codes(
+    session,
+    output_dir: Optional[Path] = None,
+    base_url: Optional[str] = None,
+) -> list[tuple[str, Path, Path]]:
+    """Generate both QR images for all products stored in the database."""
+    from backend.app.models.product import Product
+
+    products = session.query(Product).order_by(Product.product_id).all()
+    results = []
+    for prod in products:
+        ext_path, int_path = generate_product_qr_files(
+            product_id=prod.product_id,
+            external_token=prod.external_qr_token,
+            internal_token=prod.internal_qr_token,
+            output_dir=output_dir,
+            base_url=base_url,
+        )
+        results.append((prod.product_id, ext_path, int_path))
+    return results
+
