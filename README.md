@@ -82,49 +82,132 @@ Scan counts should be calculated from `Scan_History` rather than maintained as a
 
 ## Setup and running
 
-The application is intended to run locally on Windows. The commands below assume the backend and frontend have been implemented as described in the project specification.
+> **Important — always run every command from the project root (`ProdVerify/`) unless the step says otherwise.**
+> The backend package is structured as `backend.app.*`, so Python must be started from the root so it can resolve the `backend` package. Running from inside `backend/` will cause `ModuleNotFoundError: No module named 'backend'`.
 
-### Backend
+### Prerequisites
 
-Open a terminal in the project root:
+- Python 3.11+
+- Node.js 18+
+- Git
+
+---
+
+### Step 1 — Create the virtual environment
+
+Open **Terminal 1** and navigate to the project root:
 
 ```powershell
-cd backend
+# You should be at: ProdVerify/
 python -m venv .venv
+```
+
+Activate the virtual environment (required for every new terminal session):
+
+```powershell
+# ProdVerify/
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
 ```
 
-Initialize the database and seed data using the commands implemented by the project. For example, if the corresponding scripts exist:
+> On first run, if PowerShell blocks scripts, run this once as Administrator:
+> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
+---
+
+### Step 2 — Install backend dependencies
+
+Still in **Terminal 1**, from the project root:
 
 ```powershell
-python -m app.init_db
-python -m app.seed_data
+# ProdVerify/
+pip install -r backend\requirements.txt
 ```
 
-Start the API:
+---
+
+### Step 3 — Initialize the database and seed data
+
+Still in **Terminal 1**, from the project root:
 
 ```powershell
-uvicorn app.main:app --reload
+# ProdVerify/
+.\.venv\Scripts\python.exe init_db.py
+.\.venv\Scripts\python.exe seed_db.py
 ```
 
-API base URL: `http://127.0.0.1:8000`
+> Only run these once on a fresh install. Re-running `seed_db.py` on an existing database may insert duplicates.
 
-Interactive API documentation: `http://127.0.0.1:8000/docs`
+---
 
-### Frontend
+### Step 4 — Start the backend API
 
-Open a second terminal:
+Still in **Terminal 1**, from the project root:
 
 ```powershell
-cd frontend
+# ProdVerify/   ← must be the root, NOT backend/
+.\.venv\Scripts\uvicorn.exe backend.app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+You should see:
+
+```
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Application startup complete.
+```
+
+| URL | Purpose |
+|---|---|
+| `http://127.0.0.1:8000` | API base URL |
+| `http://127.0.0.1:8000/docs` | Interactive Swagger UI |
+| `http://127.0.0.1:8000/health` | Health check |
+
+**Leave Terminal 1 running.**
+
+---
+
+### Step 5 — Start the frontend
+
+Open a **new Terminal 2**. Navigate to the `frontend/` subdirectory:
+
+```powershell
+# Open a brand new terminal window/tab
+cd ProdVerify\frontend
 npm install
 npm run dev
 ```
 
-Vite will display the local frontend URL in the terminal, commonly `http://localhost:5173`.
+You should see:
 
-The initialization and seed commands must match the actual scripts created in the repository. Update this section if the implementation uses different command names.
+```
+VITE v8.x.x  ready in ...ms
+➜  Local:   http://127.0.0.1:5173/
+```
+
+**Leave Terminal 2 running.**
+
+---
+
+### Quick-start reference (after first-time setup)
+
+Once you have done the setup once, starting the project only requires two terminals:
+
+| Terminal | Directory | Command |
+|---|---|---|
+| **Terminal 1** (backend) | `ProdVerify/` | `.\.venv\Scripts\uvicorn.exe backend.app.main:app --reload --host 127.0.0.1 --port 8000` |
+| **Terminal 2** (frontend) | `ProdVerify/frontend/` | `npm run dev` |
+
+---
+
+### Common mistakes
+
+| Mistake | Symptom | Fix |
+|---|---|---|
+| Running uvicorn from `backend/` | `ModuleNotFoundError: No module named 'backend'` | Run from project root (`ProdVerify/`) |
+| Using `python -m app.init_db` from `backend/` | `No module named app.init_db` | Use the root-level scripts `init_db.py` / `seed_db.py` instead |
+| Using wrong pip (system Python instead of `.venv`) | Packages not found at runtime | Always activate `.venv` first or use `.\.venv\Scripts\pip.exe` explicitly |
+| Frontend can't reach API | Network error / CORS in browser | Make sure the backend is running on port `8000` before starting the frontend |
+
+
 
 ## Verification scenarios
 
